@@ -32,7 +32,7 @@ export default function TasksPage() {
 
   return (
     <>
-      <div className="mb-6">
+      <div className=" container mx-auto">
         <h1 className="text-2xl font-bold">My Tasks</h1>
         <p className="text-gray-600">
           {user?.role === "lead"
