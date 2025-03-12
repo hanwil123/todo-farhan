@@ -9,13 +9,15 @@ import { Button } from "../atoms/button";
 import { FormFieldd } from "../molecules/form-field2";
 import { getUserTeamApi } from "@/app/lib/api/getUserTeamApi";
 import type { TaskInput } from "@/app/lib/validation/task";
-import { submitTaskApi } from "@/app/lib/api/postTaskApi";
+// import { submitTaskApi } from "@/app/lib/api/postTaskApi";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogTrigger,
 } from "../atoms/dialog";
+import { useTaskStore } from "@/app/lib/store/taskStore";
+import { useToast } from "../atoms/use-toast";
 
 interface Task {
   id: string;
@@ -40,6 +42,8 @@ interface TeamMember {
 }
 
 export function TaskForm({ task, onClose }: TaskFormProps) {
+  const { toast } = useToast()
+  const { submitTask } = useTaskStore();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState<TaskInput>({
     title: "",
@@ -78,12 +82,10 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
         if (response.status === "success" && Array.isArray(response.data)) {
           setTeamMembers(response.data);
         } else {
-          console.error("Unexpected API response format:", response);
           setError("Failed to load team members");
         }
       } catch (error) {
-        console.error("Error fetching team members:", error);
-        setError("Failed to load team members");
+        setError(`Failed to load team members : ${error}`);
       } finally {
         setLoading(false);
       }
@@ -137,12 +139,21 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
 
     try {
       // Create new task
-      await submitTaskApi(formData);
+      await submitTask(formData);
+      toast({
+        title: "Task created",
+        description: "Your task has been created successfully",
+        status: "success",
+      })
       // Close the dialog after successful submission
       setIsFormOpen(false);
       onClose();
     } catch (error) {
-      console.error("Error submitting task:", error);
+      toast({
+        title: `Error creating task : ${error}`,
+        description: "An error occurred while creating the task",
+        status: "error",
+      })
     } finally {
       setIsSubmitting(false);
     }

@@ -1,52 +1,37 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { TaskCard } from "../molecules/task-card";
 import { Task, TaskStatus } from "../../types/databaseTypes";
 // import { useAuth } from "../../context/auth-context";
 import supabase from "../../lib/supabase";
-import { getTaskkApi, getTaskkToApi } from "@/app/lib/api/getTaskApi";
+// import { getTaskkApi, getTaskkToApi } from "@/app/lib/api/getTaskApi";
 import { useAuthStore } from "@/app/lib/store/authStore";
+import { useTaskStore } from "@/app/lib/store/taskStore";
 
 interface TaskListProps {
-  initialTasks?: Task[];
+  // initialTasks?: Task[];
   onEditTask: (task: Task) => void;
 }
 
-export function TaskList({ initialTasks = [], onEditTask }: TaskListProps) {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
-  const [loading, setLoading] = useState(!initialTasks.length);
+export function TaskList({ onEditTask }: TaskListProps) {
+  const { tasks, fetchTaskData, fetchTaskToData } = useTaskStore();
+  // const [loading, setLoading] = useState(!initialTasks.length);
   const { user } = useAuthStore();
   const isLead = user?.role === "lead";
   const isTeam = user?.role === "team";
   useEffect(() => {
-    if (initialTasks.length) {
-      setTasks(initialTasks);
-      return;
+    // if (initialTasks.length) {
+    //   setTasks(initialTasks);
+    //   return;
+    // }
+    if (isLead) {
+      fetchTaskData();
+    } else if (isTeam) {
+      fetchTaskToData();
     }
-
-    const fetchTasks = async () => {
-      setLoading(true);
-
-      try {
-        if (isLead) {
-          const dataTask = await getTaskkApi();
-          console.log(dataTask.data);
-          setTasks(dataTask.data);
-        } else if (isTeam) {
-          const dataTask = await getTaskkToApi();
-          console.log(dataTask.data);
-          setTasks(dataTask.data);
-        }
-      } catch (error) {
-        console.error("Error fetching tasks:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTasks();
-  }, [user, initialTasks, isLead, isTeam]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isLead, isTeam, ]);
 
   const handleStatusChange = async (taskId: string, status: TaskStatus) => {
     try {
@@ -69,17 +54,17 @@ export function TaskList({ initialTasks = [], onEditTask }: TaskListProps) {
       });
 
       // Update local state
-      setTasks((prev) =>
-        prev.map((task) => (task.id === taskId ? { ...task, status } : task))
-      );
+      tasks.forEach((task) => {
+        if (task.id === taskId) task.status = status;
+      });
     } catch (error) {
       console.error("Error updating task status:", error);
     }
   };
 
-  if (loading) {
-    return <div className="text-center py-8">Loading tasks...</div>;
-  }
+  // if (isLoading) {
+  //   return <div className="text-center py-8">Loading tasks...</div>;
+  // }
 
   if (!tasks.length) {
     return (

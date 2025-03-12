@@ -7,8 +7,10 @@ import { FormField } from "../../molecules/form-field";
 import { Button } from "../../atoms/button";
 import { LoginInput } from "@/app/lib/validation/auth";
 import { useAuthStore } from "@/app/lib/store/authStore";
+import { useToast } from "../../atoms/use-toast";
 
 export default function LoginPage() {
+  const { toast } = useToast();
   const [formLogin, setFormLogin] = useState<LoginInput>({
     email: "",
     password: "",
@@ -25,6 +27,11 @@ export default function LoginPage() {
 
     try {
       await login(formLogin.email, formLogin.password);
+      toast({
+        title: "Success",
+        description: "You have successfully logged in.",
+        status: "success",
+      });
 
       // if (!result) {
       //   setError("Invalid email or password");

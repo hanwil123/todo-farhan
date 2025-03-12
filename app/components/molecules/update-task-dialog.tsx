@@ -1,72 +1,105 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import { Pencil } from "lucide-react"
-import type { Task } from "@/app/types/databaseTypes"
+import type React from "react";
+import { useState, useEffect } from "react";
+import { Pencil } from "lucide-react";
+import type { Task } from "@/app/types/databaseTypes";
 
-import { FormFieldd } from "./form-field2"
-
-import { updateTaskkApi } from "@/app/lib/api/updateTaskApi"
-import { useAuthStore } from "@/app/lib/store/authStore"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "../atoms/dialog"
-import { Button } from "../atoms/button"
-import { Input } from "../atoms/input"
-import { Textarea } from "../atoms/textarea"
-import { Select } from "../atoms/select"
+import { FormFieldd } from "./form-field2";
+import { useTaskStore } from "@/app/lib/store/taskStore";
+import { useAuthStore } from "@/app/lib/store/authStore";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "../atoms/dialog";
+import { Button } from "../atoms/button";
+import { Input } from "../atoms/input";
+import { Textarea } from "../atoms/textarea";
+import { Select } from "../atoms/select";
+import { useToast } from "../atoms/use-toast";
+// import { Toast } from "../atoms/use-toast";
 
 interface UpdateTaskDialogProps {
-  task: Task
-  teamMembers: { id: string; email: string }[]
+  task: Task;
+  teamMembers: { id: string; email: string }[];
 }
 
 export function UpdateTaskDialog({ task, teamMembers }: UpdateTaskDialogProps) {
-  const { user } = useAuthStore()
-  const isLead = user?.role === "lead"
-  const isTeam = user?.role === "team"
-  const [isOpen, setIsOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast()
+  const { user } = useAuthStore();
+  const { updateTask, updateTaskStatus, isLoading, error } = useTaskStore();
+
+  const isLead = user?.role === "lead";
+  const isTeam = user?.role === "team";
+  const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
     id: task.id,
     title: task.title,
     description: task.description,
     status: task.status,
     assigned_to: task.assigned_to || "",
-  })
+  });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+  // Reset form data when task changes
+  useEffect(() => {
+    setFormData({
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      status: task.status,
+      assigned_to: task.assigned_to || "",
+    });
+  }, [task]);
+
+  // Show error toast if there's an error
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error updating task",
+        description: error,
+        variant: "destructive",
+      })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error]);
+
+  const handleChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
 
     try {
       // For team members, only update the status
       if (isTeam) {
-        await updateTaskkApi({
-          id: task.id,
-          status: formData.status,
-          // Keep original values for other fields
-          title: task.title,
-          description: task.description,
-          assigned_to: task.assigned_to || "",
+        await updateTaskStatus(formData.id, formData.status);
+        toast({
+          title: "Task updated status successfully",
+          status: "success",
         })
-      } else if(isLead) {
+      } else if (isLead) {
         // For leads, update all fields
-        await updateTaskkApi(formData)
+        await updateTask(formData);
+        toast({
+          title: "Task updated successfully",
+          status: "success",
+        })
       }
-
-      console.log("Task updated successfully")
-      setIsOpen(false)
+      setIsOpen(false);
     } catch (error) {
-      console.error("Error updating task:", error)
-    } finally {
-      setIsLoading(false)
+      // Error is already handled by the store and shown via toast
+      console.error("Error updating task:", error);
     }
-  }
+  };
 
   return (
     <>
@@ -78,7 +111,7 @@ export function UpdateTaskDialog({ task, teamMembers }: UpdateTaskDialogProps) {
         </DialogTrigger>
         <DialogContent className="sm:max-w-[425px] text-black">
           <DialogHeader>
-            <DialogTitle>Edit Commercial Operation Date</DialogTitle>
+            <DialogTitle>Edit Task</DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmit} className="space-y-4 pt-4">
@@ -108,7 +141,12 @@ export function UpdateTaskDialog({ task, teamMembers }: UpdateTaskDialogProps) {
             </FormFieldd>
 
             <FormFieldd label="Status" htmlFor="status">
-              <Select id="status" name="status" value={formData.status} onChange={handleChange}>
+              <Select
+                id="status"
+                name="status"
+                value={formData.status}
+                onChange={handleChange}
+              >
                 <option value="not_started">Not Started</option>
                 <option value="on_progress">In Progress</option>
                 <option value="done">Done</option>
@@ -135,7 +173,12 @@ export function UpdateTaskDialog({ task, teamMembers }: UpdateTaskDialogProps) {
             </FormFieldd>
 
             <div className="flex justify-end gap-2 pt-4">
-              <Button type="button" variant="outline" onClick={() => setIsOpen(false)} disabled={isLoading}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsOpen(false)}
+                disabled={isLoading}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={isLoading}>
@@ -146,6 +189,5 @@ export function UpdateTaskDialog({ task, teamMembers }: UpdateTaskDialogProps) {
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }
-
