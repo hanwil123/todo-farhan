@@ -2,7 +2,7 @@ import axios from "axios";
 import { UpdateTaskInput } from "../validation/task";
 
 export async function updateTaskkApi(data: UpdateTaskInput) {
-  //   const token = localStorage.getItem("auth_token");
+    const token = localStorage.getItem("auth_token");
   try {
     const requestBody = {
       id: data.id,
@@ -16,10 +16,10 @@ export async function updateTaskkApi(data: UpdateTaskInput) {
       `http://localhost:3000/api/task/updateTask`,
       JSON.stringify(requestBody),
       {
-        // headers: {
-        //   Authorization: `Bearer ${token}`,
-        //   "Content-Type": "application/json",
-        // },
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       }
     );
     if (!response.data.data) {

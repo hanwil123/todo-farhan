@@ -1,6 +1,7 @@
 import supabase from "@/app/lib/supabase";
 import { NextResponse } from "next/server";
 import jwt from "jsonwebtoken";
+import { logTaskActivity } from "@/app/lib/logtask";
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 export async function POST(request: Request) {
@@ -46,6 +47,18 @@ const { data: taskData, error: taskError } = await supabase
   if (taskError) {
     return NextResponse.json({ message: taskError.message }, { status: 500 });
   }
+    // Log the task creation activity
+    await logTaskActivity({
+      task_id: taskData.id,
+      user_id: userId,
+      action: 'create',
+      new_values: {
+        title,
+        description,
+        status,
+        assigned_to
+      }
+    });
   return NextResponse.json({
     message: "Task created successfully",
     data: taskData,
